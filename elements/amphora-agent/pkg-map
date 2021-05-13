@@ -1,0 +1,39 @@
+{
+  "release": {
+    "rhel": {
+      "8": {
+        "isc-dhcp-client": "dhcp-client",
+        "python-dev": "platform-python-devel",
+        "vlan": "",
+        "screen": "",
+        "dkms": ""
+      }
+    }
+  },
+  "family": {
+    "redhat": {
+      "amphora-agent": "openstack-octavia-amphora-agent",
+      "netcat-openbsd": "nmap-ncat",
+      "netbase": "",
+      "cron": "cronie",
+      "ifenslave": "",
+      "iputils-tracepath": "",
+      "cloud-guest-utils": "cloud-utils-growpart",
+      "apparmor": "",
+      "dmeventd": "",
+      "isc-dhcp-client": "dhclient",
+      "uuid-runtime": "",
+      "ubuntu-cloudimage-keyring": "",
+      "vim-tiny": "",
+      "ureadahead": "",
+      "apt-transport-https": "",
+      "pollinate": "",
+      "ifupdown": "",
+      "network-scripts": "network-scripts"
+    }
+  },
+  "default": {
+    "amphora-agent": "amphora-agent",
+    "network-scripts": ""
+  }
+}

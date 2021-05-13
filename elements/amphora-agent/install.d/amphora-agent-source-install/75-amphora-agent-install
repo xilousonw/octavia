@@ -1,0 +1,46 @@
+#!/bin/bash
+
+if [ ${DIB_DEBUG_TRACE:-0} -gt 0 ]; then
+    set -x
+fi
+set -eu
+set -o pipefail
+
+SCRIPTDIR=$(dirname $0)
+AMP_VENV=/opt/amphora-agent-venv
+
+# Create a virtual environment to contain the amphora agent
+${DIB_PYTHON} -m virtualenv $AMP_VENV
+
+$AMP_VENV/bin/pip install pip --upgrade
+
+$AMP_VENV/bin/pip install -U -c /opt/upper-constraints.txt /opt/amphora-agent
+
+# Link the amphora-agent out to /usr/local/bin where the startup scripts look
+ln -s $AMP_VENV/bin/amphora-agent /usr/local/bin/amphora-agent || true
+
+# Also link out the vrrp check script(s) so they're in PATH for keepalived
+ln -s $AMP_VENV/bin/haproxy-vrrp-* /usr/local/bin/ || true
+
+mkdir /etc/octavia
+# we assume certs, etc will come in through the config drive
+mkdir /etc/octavia/certs
+mkdir -p /var/lib/octavia
+
+install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.logrotate /etc/logrotate.d/amphora-agent
+
+case "$DIB_INIT_SYSTEM" in
+    upstart)
+        install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.conf /etc/init/amphora-agent.conf
+        ;;
+    systemd)
+        install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.service /usr/lib/systemd/system/amphora-agent.service
+        ;;
+    sysv)
+        install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.init /etc/init.d/amphora-agent.init
+        ;;
+    *)
+        echo "Unsupported init system"
+        exit 1
+        ;;
+esac

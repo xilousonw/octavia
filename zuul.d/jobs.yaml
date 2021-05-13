@@ -1,0 +1,131 @@
+- job:
+    name: octavia-legacy-dsvm-base
+    parent: legacy-dsvm-base
+    timeout: 7800
+    required-projects:
+      - openstack/devstack-gate
+      - openstack/barbican
+      - openstack/octavia
+      - openstack/octavia-lib
+      - openstack/python-barbicanclient
+      - openstack/python-octaviaclient
+      - openstack/tripleo-image-elements
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^api-ref/.*$
+      - ^doc/.*$
+      - ^etc/.*$
+      - ^releasenotes/.*$
+    vars:
+      zuul_copy_output:
+        '/var/log/dib-build/': 'logs'
+        '/var/log/octavia-tenant-traffic.log': 'logs'
+        '/var/log/octavia-amphora.log': 'logs'
+
+- job:
+    name: publish-openstack-octavia-amphora-image
+    parent: publish-openstack-artifacts
+    run: playbooks/image-build/run.yaml
+    post-run: playbooks/image-build/post.yaml
+    required-projects:
+        - openstack/diskimage-builder
+        - openstack/octavia
+        - openstack/octavia-lib
+- job:
+    name: publish-openstack-octavia-amphora-image-xenial
+    parent: publish-openstack-octavia-amphora-image
+    description: |
+      Publish Ubuntu Xenial (16.04) based amphora image to tarballs.o.o.
+    vars:
+        amphora_os: ubuntu
+        amphora_os_release: xenial
+
+- job:
+    name: publish-openstack-octavia-amphora-image-bionic
+    parent: publish-openstack-octavia-amphora-image
+    description: |
+      Publish Ubuntu Bionic (18.04) based amphora image to tarballs.o.o.
+    vars:
+        amphora_os: ubuntu
+        amphora_os_release: bionic
+
+- job:
+    name: publish-openstack-octavia-amphora-image-centos7
+    parent: publish-openstack-octavia-amphora-image
+    description: |
+      Publish CentOS 7 based amphora image to tarballs.o.o.
+    vars:
+        amphora_os: centos
+        amphora_image_size: 3
+        amphora_os_release: 7
+
+- job:
+    name: publish-openstack-octavia-amphora-image-fedora28
+    parent: publish-openstack-octavia-amphora-image
+    description: |
+      Publish Fedora 28 based amphora image to tarballs.o.o.
+    vars:
+        amphora_os: fedora
+        amphora_image_size: 3
+        amphora_os_release: 28
+
+- job:
+    name: octavia-v2-dsvm-scenario-amphora-v2
+    parent: octavia-v2-dsvm-scenario
+    vars:
+      devstack_local_conf:
+        post-config:
+          $OCTAVIA_CONF:
+            api_settings:
+              default_provider_driver: amphorav2
+              enabled_provider_drivers: amphorav2:The v2 amphora driver.
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              enabled_provider_drivers: amphorav2:The v2 amphora driver.
+              provider: amphorav2
+
+- project-template:
+    name: octavia-tox-tips
+    check:
+      jobs:
+        - octavia-tox-py37-tips
+        - octavia-tox-functional-py37-tips
+
+- job:
+    name: octavia-tox-py37-tips
+    parent: openstack-tox-py37
+    description: |
+      Run tox python 3.7 unit tests against master of related libraries.
+    vars:
+      tox_install_siblings: true
+      zuul_work_dir: src/opendev.org/openstack/octavia
+    required-projects:
+      - openstack/octavia-lib
+      - openstack/octavia
+
+- job:
+    name: octavia-tox-functional-py37-tips
+    parent: openstack-tox-functional-py37
+    description: |
+      Run tox python 3.7 functional against master of related libraries.
+    vars:
+      tox_install_siblings: true
+      zuul_work_dir: src/opendev.org/openstack/octavia
+    required-projects:
+      - openstack/octavia-lib
+      - openstack/octavia
+
+- job:
+    name: octavia-amphora-image-build
+    parent: base
+    description: |
+      Builds the amphora image using the released diskimage-builder version,
+      not Git master. This job does not publish the image.
+    run: playbooks/image-build/run.yaml
+    required-projects:
+        - openstack/octavia
+        - openstack/octavia-lib
+    vars:
+        amphora_os: ubuntu
+        amphora_os_release: bionic
